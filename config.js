@@ -14,7 +14,11 @@ const TG_CHAT_ID = "-5513661326";
 const DEFAULT_MENU = {
   "shop": "Keith's Hotdog",
   "tagline": "Vị ngon của Keith. 33A Lò Siêu, P16, Q11. ĐT 0909 002 131",
-  "colors": { "bg": "#f3e9d2", "ink": "#26332b", "accent": "#c9972b" },
+  "colors": {
+    "bg": "#f3e9d2",
+    "ink": "#26332b",
+    "accent": "#c9972b"
+  },
   "categories": [
     {
       "name": "Hotdog",
@@ -22,48 +26,52 @@ const DEFAULT_MENU = {
         {
           "name": "Hotdog Trứng",
           "desc": "Bánh mì trứng phô mai",
-          "price": 19000
+          "price": 20000
         },
         {
           "name": "Hotdog Truyền Thống",
           "desc": "",
-          "price": 22000
+          "price": 23000
         },
         {
           "name": "Hotdog Baby",
           "desc": "",
-          "price": 26000
+          "price": 27000
         },
         {
           "name": "Hotdog Hàn Quốc",
           "desc": "",
-          "price": 27000
+          "price": 30000
         },
         {
           "name": "Hotdog Giòn",
           "desc": "",
-          "price": 30000
+          "price": 31000
         },
         {
           "name": "Hotdog Bacon Cheese",
           "desc": "",
-          "price": 40000
+          "price": 41000
         },
         {
           "name": "Hotdog XL",
           "desc": "Trứng phô mai, xúc xích Đức 80g",
-          "price": 42000,
-          "best": true
+          "price": 44000
         },
         {
           "name": "Hotdog Keith's",
           "desc": "Gà chiên trứng phô mai sốt độc quyền",
-          "price": 43000
+          "price": 45000
         },
         {
           "name": "Hotdog Tôm Phô Mai",
           "desc": "",
-          "price": 45000
+          "price": 47000
+        },
+        {
+          "name": "Hotdog Cá Phô Mai",
+          "desc": "",
+          "price": 47000
         }
       ]
     },
@@ -73,34 +81,37 @@ const DEFAULT_MENU = {
         {
           "name": "Sandwich Sữa Phô Mai",
           "desc": "",
-          "price": 27000
+          "price": 30000
         },
         {
           "name": "Sandwich Bacon Trứng",
           "desc": "",
-          "price": 37000,
-          "best": true
+          "price": 40000
         },
         {
           "name": "Sandwich Bò Trứng",
           "desc": "",
-          "price": 39000
+          "price": 42000
+        },
+        {
+          "name": "Sandwich Xúc Xích Trứng Cheese",
+          "desc": "",
+          "price": 45000
         },
         {
           "name": "Sandwich Ham Cheese",
-          "desc": "Sốt cay béo vị Keith's",
-          "price": 42000,
-          "best": true
-        },
-        {
-          "name": "Sandwich Xúc Xích Trứng Phô Mai",
-          "desc": "",
-          "price": 42000
+          "desc": "Thịt ham nướng phô mai, sốt cay béo vị Keith's",
+          "price": 44000
         },
         {
           "name": "Sandwich Tôm Phô Mai",
           "desc": "",
-          "price": 45000
+          "price": 47000
+        },
+        {
+          "name": "Sandwich Cá Phô Mai",
+          "desc": "",
+          "price": 47000
         }
       ]
     },
@@ -110,22 +121,27 @@ const DEFAULT_MENU = {
         {
           "name": "Burger Bò",
           "desc": "",
-          "price": 32000
+          "price": 33000
         },
         {
           "name": "Burger Gà Phô Mai",
           "desc": "",
-          "price": 42000
+          "price": 45000
         },
         {
           "name": "Burger Bò Trứng Phô Mai",
           "desc": "",
-          "price": 42000
+          "price": 44000
         },
         {
           "name": "Burger Tôm Phô Mai",
           "desc": "",
-          "price": 45000
+          "price": 47000
+        },
+        {
+          "name": "Burger Cá Phô Mai",
+          "desc": "",
+          "price": 47000
         }
       ]
     },
@@ -135,27 +151,29 @@ const DEFAULT_MENU = {
         {
           "name": "Family Combo",
           "desc": "1 Sandwich Bacon Trứng, 2 gà xiên, 1 Hotdog Giòn, khoai tây chiên, 2 ly nước ngọt",
-          "price": 123000
+          "price": 131000,
+          "best": true
         },
         {
           "name": "Combo Gà Kebab + Sandwich",
           "desc": "Gà Kebab 2 xiên, Sandwich Bacon Trứng",
-          "price": 63000
+          "price": 67000,
+          "best": true
         },
         {
           "name": "Combo Hamburger",
           "desc": "Hamburger Bò Trứng Phô Mai, khoai tây",
-          "price": 59000
+          "price": 61000
         },
         {
           "name": "Combo Hotdog XL",
           "desc": "Hotdog XL, 1 ly nước ngọt",
-          "price": 49000
+          "price": 51000
         },
         {
-          "name": "Combo Hotdog Giòn",
-          "desc": "Hotdog Giòn, Trà Tắc",
-          "price": 45000
+          "name": "Combo Hotdog Giòn + Trà Tắc",
+          "desc": "",
+          "price": 47000
         }
       ]
     },
@@ -165,22 +183,22 @@ const DEFAULT_MENU = {
         {
           "name": "Khoai Tây Chiên Truyền Thống",
           "desc": "",
-          "price": 20000
+          "price": 22000
         },
         {
           "name": "Khoai Tây Bơ Đường",
           "desc": "",
-          "price": 25000
+          "price": 27000
         },
         {
           "name": "Khoai Tây Lắc Phô Mai",
           "desc": "",
-          "price": 27000
+          "price": 30000
         },
         {
           "name": "Khoai Tây Bacon Cheese",
           "desc": "",
-          "price": 39000
+          "price": 41000
         }
       ]
     },
@@ -190,62 +208,23 @@ const DEFAULT_MENU = {
         {
           "name": "Gà Teriyaki",
           "desc": "2 xiên",
-          "price": 32000,
-          "best": true
+          "price": 35000
         },
         {
           "name": "Gà Kebab",
           "desc": "2 xiên",
-          "price": 28000,
-          "best": true
-        },
-        {
-          "name": "Gà Sốt Chua Ngọt",
-          "desc": "",
-          "price": 32000,
-          "best": true
-        },
-        {
-          "name": "Gà Lắc Phô Mai",
-          "desc": "",
-          "price": 37000
+          "price": 30000
         },
         {
           "name": "Xúc Xích XL",
-          "desc": "80g xúc xích Đức",
-          "price": 29000,
-          "best": true
-        },
-        {
-          "name": "Xúc Xích Giòn",
-          "desc": "",
-          "price": 24000
-        },
-        {
-          "name": "Salad Xúc Xích Đức",
-          "desc": "",
-          "price": 37000
-        },
-        {
-          "name": "Salad Gà",
-          "desc": "",
-          "price": 41000
+          "desc": "80g",
+          "price": 31000
         }
       ]
     },
     {
-      "name": "Đồ Uống",
+      "name": "Nước",
       "items": [
-        {
-          "name": "Nước Ngọt Ly",
-          "desc": "",
-          "price": 10000
-        },
-        {
-          "name": "Nước Ngọt Chai",
-          "desc": "",
-          "price": 15000
-        },
         {
           "name": "Trà Tắc",
           "desc": "",
@@ -255,11 +234,36 @@ const DEFAULT_MENU = {
           "name": "Trà Tắc Trân Châu Trắng Mật Ong",
           "desc": "",
           "price": 25000
+        },
+        {
+          "name": "Nước Ngọt Ly",
+          "desc": "",
+          "price": 10000
+        },
+        {
+          "name": "Nước Ngọt Chai",
+          "desc": "",
+          "price": 15000
         }
       ]
     },
     {
-      "name": "Extra (thêm vào món)",
+      "name": "Topping",
+      "items": [
+        {
+          "name": "Trân Châu Trắng",
+          "desc": "",
+          "price": 5000
+        },
+        {
+          "name": "Up Size 700ml",
+          "desc": "",
+          "price": 5000
+        }
+      ]
+    },
+    {
+      "name": "Extra",
       "items": [
         {
           "name": "Trứng",
@@ -267,14 +271,14 @@ const DEFAULT_MENU = {
           "price": 7000
         },
         {
-          "name": "Phô Mai",
+          "name": "Phô Mai Lát",
           "desc": "",
-          "price": 9000
+          "price": 10000
         },
         {
           "name": "Bacon",
           "desc": "",
-          "price": 17000
+          "price": 20000
         },
         {
           "name": "Bò Miếng",
@@ -285,26 +289,11 @@ const DEFAULT_MENU = {
           "name": "Tôm",
           "desc": "",
           "price": 30000
-        }
-      ]
-    },
-    {
-      "name": "Topping đồ uống",
-      "items": [
-        {
-          "name": "Trân Châu Trắng",
-          "desc": "",
-          "price": 5000
         },
         {
-          "name": "Flan",
+          "name": "Cá",
           "desc": "",
-          "price": 8000
-        },
-        {
-          "name": "Up Size 700ml",
-          "desc": "",
-          "price": 5000
+          "price": 30000
         }
       ]
     }
