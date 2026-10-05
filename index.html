@@ -114,7 +114,7 @@ function watchSections(){
   io = new IntersectionObserver(es => es.forEach(e => {
     if (!e.isIntersecting) return;
     links.forEach(l => l.classList.toggle("on", l.hash === "#" + e.target.id));
-    const on = $("nav").querySelector(".on"); if (on) on.scrollIntoView({inline:"center", block:"nearest"});
+    const nv = $("nav"), on = nv.querySelector(".on"); if (on) nv.scrollTo({left: on.offsetLeft - (nv.clientWidth - on.offsetWidth) / 2});
   }), {rootMargin:"-30% 0px -65% 0px"});
   document.querySelectorAll(".cat").forEach(s => io.observe(s));
 }
