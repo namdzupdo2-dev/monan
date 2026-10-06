@@ -8,7 +8,7 @@ const FIREBASE_CONFIG = {
 
 // Telegram
 const TG_TOKEN = "8860239685:AAHwDp_Ejh1c7dKOZsycwl9mmZJSs9JpgDY";
-const TG_CHAT_ID = "-5513661326";
+const TG_CHAT_ID = "-1004315315721";
 
 // Địa chỉ Cloudflare Worker trung gian gửi đơn sang Telegram (xem hướng dẫn).
 // Ví dụ: "https://keith-order.tenban.workers.dev". Để trống = gọi thẳng Telegram (bị chặn ở Việt Nam).
