@@ -97,6 +97,10 @@ button:focus-visible,input:focus-visible{outline:3px solid #1f5f4a;outline-offse
     <h2>Thông tin quán</h2>
     <label for="shop">Tên quán</label><input id="shop">
     <label for="tagline">Câu giới thiệu</label><input id="tagline">
+    <label for="fontTitle">Font chữ tiêu đề (tên font trên Google Fonts)</label>
+    <input id="fontTitle" placeholder="Oswald" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <p class="hint">Áp dụng cho tên quán, tên nhóm món và thanh nhóm món. Gõ đúng tên trên fonts.google.com, ví dụ <b>Oswald</b>, <b>Bebas Neue</b>, <b>Playfair Display</b>. Để trống thì dùng Oswald.</p>
+    <p id="fontPrev" style="margin:4px 0 0;font-size:1.8rem;line-height:1.2">Keith's Hotdog</p>
   </section>
   <section>
     <h2>Màu sắc</h2>
@@ -163,6 +167,7 @@ function readColors() {
 }
 function fill() {
   $("shop").value = data.shop; $("tagline").value = data.tagline || "";
+  $("fontTitle").value = data.fontTitle || ""; previewFont();
   drawColors();
   drawCats();
 }
@@ -183,6 +188,7 @@ function drawCats() {
 }
 function collect() {
   data.shop = $("shop").value.trim(); data.tagline = $("tagline").value.trim();
+  data.fontTitle = $("fontTitle").value.trim();
   data.colors = readColors();
   data.categories = [...document.querySelectorAll(".cat")].map(c => ({
     name: c.querySelector(".cn").value.trim(),
@@ -252,6 +258,7 @@ async function saveImages() {
 $("save").onclick = async () => {
   collect();
   if (!data.shop) return say("Cần điền tên quán.", true);
+  if (data.fontTitle && !/^[A-Za-z0-9 ]{1,40}$/.test(data.fontTitle)) return say("Tên font chỉ gồm chữ, số và dấu cách, ví dụ: Oswald hoặc Playfair Display.", true);
   for (const [k, l] of COLORS) { const v = data.colors[k]; if (v && !CSS.supports("color", v)) return say("Màu không hợp lệ ở mục \"" + l + "\": " + v + ". Ví dụ đúng: #c9972b (6 ký tự sau dấu #)", true); }
   try { say("Đang lưu..."); await saveImages(); await ref.set(data); say("Đã lưu. Khách tải lại trang là thấy menu mới."); }
   catch (e) { say("Lưu thất bại: kiểm tra đã dán Rules mới (có phần images) chưa.", true); }
@@ -393,6 +400,24 @@ $("rvDelAll").onclick = async () => {
   } catch (err) { $("rvMsg").style.color = "#b00020"; $("rvMsg").textContent = "Xóa chưa hết (" + (err.code === "permission-denied" ? "thiếu quyền, cần dán Rules mới" : err.message) + "). Đã xóa " + done.length + "/" + rows.length + " đơn."; }
   $("rvDelAll").disabled = false; if (done.length) afterDelete(done);
 };
+
+let fontTimer;
+function previewFont() {
+  const name = ($("fontTitle").value.trim() || "Oswald");
+  const p = $("fontPrev");
+  if (!/^[A-Za-z0-9 ]{1,40}$/.test(name)) { p.textContent = "Tên font không hợp lệ"; p.style.fontFamily = ""; return; }
+  p.textContent = ($("shop").value.trim() || "Keith's Hotdog");
+  const fam = encodeURIComponent(name).replace(/%20/g, "+");
+  if (!document.getElementById("pf-" + fam)) {
+    const l = document.createElement("link"); l.id = "pf-" + fam; l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=" + fam + ":wght@400;600;700&display=swap";
+    l.onerror = function () { this.href = "https://fonts.googleapis.com/css2?family=" + fam + "&display=swap"; this.onerror = null; };
+    document.head.appendChild(l);
+  }
+  p.style.fontFamily = '"' + name + '", system-ui, sans-serif';
+}
+$("fontTitle").addEventListener("input", () => { clearTimeout(fontTimer); fontTimer = setTimeout(previewFont, 400); });
+$("shop").addEventListener("input", previewFont);
 </script>
 </body>
 </html>
