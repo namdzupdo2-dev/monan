@@ -6,7 +6,7 @@
 <title>Đặt món</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Cormorant+Garamond:wght@600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3e9d2;--ink:#26332b;--accent:#c9972b;--accent-ink:#1b1b1b;
 --card:color-mix(in srgb,var(--bg) 65%,#fff);--muted:color-mix(in srgb,var(--ink) 62%,var(--bg));--line:color-mix(in srgb,var(--ink) 24%,var(--bg));
@@ -34,10 +34,11 @@ main{max-width:680px;margin:auto;padding:4px 18px}
 .thumb{flex:none;width:68px;height:80px;object-fit:cover;padding:2px;border:2px solid var(--accent);border-radius:34px 34px 6px 6px;background:var(--card)}
 .info{flex:1;min-width:0}
 .top{display:flex;align-items:baseline;gap:8px}
-.nm{font-weight:600}
+.nm{font:600 1rem/1.35 "Be Vietnam Pro",system-ui,sans-serif}
 .dots{flex:1;min-width:10px;border-bottom:2px dotted var(--line);transform:translateY(-4px)}
-.pr{font:700 1.25rem var(--serif);white-space:nowrap}
-.ds{display:block;margin-top:1px;font-style:italic;color:var(--muted);font-size:.87rem}
+.pr{font:600 1.2rem var(--title);letter-spacing:.02em;white-space:nowrap}
+.ds{display:block;margin-top:2px;font:400 .82rem/1.4 "Be Vietnam Pro",system-ui,sans-serif;color:var(--muted)}
+.sub{margin:6px 0 0;font:500 1rem var(--title);letter-spacing:.5em;padding-left:.5em;color:var(--accent);text-transform:uppercase}
 .best{display:inline-block;margin-left:6px;padding:0 7px;border-radius:3px;background:var(--accent);color:var(--accent-ink);font:600 .7rem/1.6 Lora,Georgia,serif;white-space:nowrap;vertical-align:middle}
 .qty{display:flex;align-items:center;gap:6px}
 .qty button{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-size:1.2rem;line-height:1;cursor:pointer}
@@ -83,6 +84,7 @@ fieldset.pm{min-width:0;margin:14px 0 0;padding:0;border:0}
 <body>
 <header class="hero"><div class="frame"><div>
   <h1 id="shop">Đặt món</h1>
+  <p class="sub">Fast Food</p>
   <div class="orn" aria-hidden="true">◆</div>
   <p class="tag" id="tag"></p>
 </div></div></header>
