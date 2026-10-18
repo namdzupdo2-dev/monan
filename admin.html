@@ -34,6 +34,22 @@ button:focus-visible,input:focus-visible{outline:3px solid #1f5f4a;outline-offse
 .ph{display:flex;align-items:center;justify-content:center;width:56px;height:56px;margin:0;border:2px dashed #aaa;border-radius:8px;cursor:pointer;overflow:hidden;font-size:1.4rem;color:#777;background:#fff}
 .pv{width:100%;height:100%;object-fit:cover}
 .x{position:absolute;top:-7px;right:-7px;width:22px;height:22px;padding:0;border-radius:50%;line-height:1;background:#b00020;color:#fff;border:0}
+.rv .seg{display:flex;border:1px solid #1f5f4a;border-radius:8px;overflow:hidden;margin-bottom:10px}
+.rv .seg button{flex:1;border:0;border-radius:0;background:#fff;color:#1f5f4a;padding:9px 6px;font-weight:600}
+.rv .seg button[aria-pressed="true"]{background:#1f5f4a;color:#fff}
+.rv .pick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.rv .pick input,.rv .pick select{width:auto;min-width:0;padding:8px;border:1px solid #bbb;border-radius:6px;font:inherit;background:#fff}
+.rv .pick input[type=number]{width:96px}
+.rv .big{margin:6px 0;font-size:2.4rem;font-weight:700;line-height:1.1;color:#1f5f4a;word-break:break-word}
+.rv svg{display:block;width:100%;height:auto}
+.rv .cap{min-height:1.5em;margin:6px 0 0;font-weight:600;color:#1f5f4a}
+.rv .bar{fill:#1f5f4a;cursor:pointer}.rv .bar.on{fill:#c9972b}
+.rv .ax{font:17px system-ui,sans-serif;fill:#555}
+.rv .gl{stroke:#e3e3e3;stroke-width:1}
+#rvMsg{margin:6px 0 0;font-size:.9rem;color:#b00020}
+.rv .ord{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #eee}
+.rv .ord .t{flex:1;min-width:0}.rv .ord b{display:block}.rv .ord span{font-size:.82rem;color:#666}
+.rv .ord button{padding:6px 10px}
 </style>
 </head>
 <body>
@@ -50,6 +66,33 @@ button:focus-visible,input:focus-visible{outline:3px solid #1f5f4a;outline-offse
 
 <div id="editor" class="hide">
   <p><button id="signout">Đăng xuất</button></p>
+  <section class="rv">
+    <h2>Doanh thu</h2>
+    <div class="seg" id="rvMode" role="group" aria-label="Xem theo">
+      <button type="button" data-m="day" aria-pressed="true">Ngày</button>
+      <button type="button" data-m="month" aria-pressed="false">Tháng</button>
+      <button type="button" data-m="year" aria-pressed="false">Năm</button>
+    </div>
+    <div class="pick">
+      <input type="date" id="rvDay" aria-label="Chọn ngày">
+      <select id="rvMonth" aria-label="Chọn tháng" hidden></select>
+      <input type="number" id="rvYear" min="2020" max="2100" step="1" aria-label="Chọn năm" hidden>
+      <button type="button" id="rvReload">Tải lại</button>
+    </div>
+    <div class="seg" id="rvView" role="group" aria-label="Kiểu xem">
+      <button type="button" data-v="total" aria-pressed="true">Tổng</button>
+      <button type="button" data-v="chart" aria-pressed="false">Biểu đồ</button>
+      <button type="button" data-v="list" aria-pressed="false">Đơn</button>
+    </div>
+    <div id="rvTotal"><p class="big" id="rvBig">0đ</p></div>
+    <div id="rvChart" hidden><div id="rvSvg"></div><p class="cap" id="rvCap">Chạm vào một cột để xem số tiền.</p></div>
+    <div id="rvList" hidden>
+      <p class="hint">Xóa đơn test hoặc đơn sai để doanh thu đúng. Xóa xong không khôi phục được.</p>
+      <div id="rvRows"></div>
+      <p><button type="button" class="del" id="rvDelAll">Xóa tất cả đơn trong khoảng này</button></p>
+    </div>
+    <p id="rvMsg" role="status"></p>
+  </section>
   <section>
     <h2>Thông tin quán</h2>
     <label for="shop">Tên quán</label><input id="shop">
@@ -89,6 +132,7 @@ firebase.auth().onAuthStateChanged(async u => {
   if (!u) return;
   try { const s = await ref.get(); data = s.exists ? s.data() : DEFAULT; fill(); say("Đã tải menu."); }
   catch (e) { say("Không tải được menu (" + e.message + "). Thử tải lại trang, đổi sang wifi, hoặc kiểm tra Firestore đã được tạo chưa.", true); }
+  initRevenue();
 });
 $("signin").onclick = async () => {
   try { say("Đang đăng nhập..."); await firebase.auth().signInWithEmailAndPassword($("email").value.trim(), $("pass").value); }
@@ -211,6 +255,143 @@ $("save").onclick = async () => {
   for (const [k, l] of COLORS) { const v = data.colors[k]; if (v && !CSS.supports("color", v)) return say("Màu không hợp lệ ở mục \"" + l + "\": " + v + ". Ví dụ đúng: #c9972b (6 ký tự sau dấu #)", true); }
   try { say("Đang lưu..."); await saveImages(); await ref.set(data); say("Đã lưu. Khách tải lại trang là thấy menu mới."); }
   catch (e) { say("Lưu thất bại: kiểm tra đã dán Rules mới (có phần images) chưa.", true); }
+};
+
+/* ===== Doanh thu (giờ Việt Nam) ===== */
+const money = n => Math.round(n).toLocaleString("vi-VN") + "đ";
+const vnNow = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString();
+const rv = {mode: "day", view: "total", cache: {}, ready: false, seq: 0};
+function initRevenue() {
+  if (rv.ready) { loadRevenue(); return; }
+  rv.ready = true;
+  const iso = vnNow();
+  $("rvDay").value = iso.slice(0, 10);
+  $("rvYear").value = iso.slice(0, 4);
+  $("rvMonth").innerHTML = Array.from({length: 12}, (_, i) => `<option value="${String(i + 1).padStart(2, "0")}">Tháng ${i + 1}</option>`).join("");
+  $("rvMonth").value = iso.slice(5, 7);
+  $("rvMode").onclick = e => { const b = e.target.closest("button[data-m]"); if (!b) return; rv.mode = b.dataset.m; syncRv(); loadRevenue(); };
+  $("rvView").onclick = e => { const b = e.target.closest("button[data-v]"); if (!b) return; rv.view = b.dataset.v; syncRv(); drawRv(); };
+  ["rvDay", "rvMonth", "rvYear"].forEach(id => $(id).addEventListener("change", loadRevenue));
+  $("rvReload").onclick = () => { rv.cache = {}; loadRevenue(); };
+  syncRv(); loadRevenue();
+}
+function syncRv() {
+  document.querySelectorAll("#rvMode button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === rv.mode));
+  document.querySelectorAll("#rvView button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === rv.view));
+  $("rvDay").hidden = rv.mode !== "day";
+  $("rvMonth").hidden = rv.mode !== "month";
+  $("rvYear").hidden = rv.mode === "day";
+  $("rvTotal").hidden = rv.view !== "total";
+  $("rvChart").hidden = rv.view !== "chart";
+  $("rvList").hidden = rv.view !== "list";
+}
+function rvQuery() {
+  const col = firebase.firestore().collection("orders");
+  const y = parseInt($("rvYear").value, 10) || +vnNow().slice(0, 4);
+  if (rv.mode === "day") { const d = $("rvDay").value; return {key: "d" + d, q: d && col.where("d", "==", d)}; }
+  if (rv.mode === "month") { const m = y + "-" + $("rvMonth").value; return {key: "m" + m, q: col.where("m", "==", m)}; }
+  return {key: "y" + y, q: col.where("y", "==", y)};
+}
+async function loadRevenue() {
+  const {key, q} = rvQuery(), my = ++rv.seq;
+  $("rvMsg").textContent = "";
+  if (!q) { rv.cur = null; drawRv(); return; }
+  try {
+    if (!rv.cache[key]) {
+      $("rvMsg").style.color = "#666"; $("rvMsg").textContent = "Đang tải doanh thu...";
+      const snap = await q.get();
+      rv.cache[key] = snap.docs.map(d => ({...d.data(), id: d.id}));
+    }
+    if (my !== rv.seq) return;
+    $("rvMsg").textContent = "";
+    rv.key = key; rv.cur = aggregate(rv.cache[key]); drawRv();
+  } catch (e) {
+    if (my !== rv.seq) return;
+    $("rvMsg").style.color = "#b00020";
+    $("rvMsg").textContent = e.code === "permission-denied" ? "Chưa xem được doanh thu: cần dán Rules mới có phần orders vào Firestore." : "Không tải được doanh thu (" + e.message + ").";
+    rv.cur = null; drawRv();
+  }
+}
+function aggregate(rows) {
+  let n, label, idx;
+  if (rv.mode === "day") { n = 24; idx = r => r.h; label = i => i + "h"; }
+  else if (rv.mode === "month") {
+    const y = parseInt($("rvYear").value, 10), m = parseInt($("rvMonth").value, 10);
+    n = new Date(y, m, 0).getDate(); idx = r => parseInt(String(r.d).slice(8, 10), 10) - 1; label = i => String(i + 1);
+  } else { n = 12; idx = r => parseInt(String(r.m).slice(5, 7), 10) - 1; label = i => "T" + (i + 1); }
+  const sums = new Array(n).fill(0); let total = 0;
+  rows.forEach(r => { const i = idx(r), t = Number(r.total) || 0; if (i >= 0 && i < n) sums[i] += t; total += t; });
+  return {sums, total, label};
+}
+function nice(max) { if (max <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(max))), f = max / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
+const short = v => v >= 1e6 ? (v / 1e6).toFixed(v % 1e6 ? 1 : 0).replace(".", ",") + "tr" : v >= 1e3 ? Math.round(v / 1e3) + "k" : String(v);
+function drawRv() {
+  const c = rv.cur;
+  $("rvBig").textContent = money(c ? c.total : 0);
+  if (rv.view === "list") { drawRows(); return; }
+  if (rv.view !== "chart") return;
+  const W = 640, H = 300, L = 64, R = 8, T = 14, B = 34;
+  if (!c || !c.total) { $("rvSvg").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Chưa có doanh thu"><text class="ax" x="${W / 2}" y="${H / 2}" text-anchor="middle" style="font-size:20px">Chưa có doanh thu trong khoảng này</text></svg>`; $("rvCap").textContent = ""; return; }
+  const top = nice(Math.max(...c.sums)), n = c.sums.length, bw = (W - L - R) / n;
+  const y = v => T + (H - T - B) * (1 - v / top);
+  let g = "", bars = "", xl = "";
+  for (let k = 0; k <= 4; k++) { const v = top * k / 4; g += `<line class="gl" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 6}" y="${y(v) + 6}" text-anchor="end">${short(v)}</text>`; }
+  const step = n > 24 ? 5 : n > 12 ? 3 : 1;
+  c.sums.forEach((v, i) => {
+    const x = L + i * bw, h = Math.max(v > 0 ? 2 : 0, (H - T - B) * v / top);
+    bars += `<rect class="bar" data-i="${i}" x="${x + bw * .12}" y="${H - B - h}" width="${bw * .76}" height="${h}" rx="2"><title>${c.label(i)}: ${money(v)}</title></rect>`;
+    if (i % step === 0) xl += `<text class="ax" x="${x + bw / 2}" y="${H - 10}" text-anchor="middle">${c.label(i)}</text>`;
+  });
+  $("rvSvg").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Biểu đồ doanh thu">${g}${bars}${xl}</svg>`;
+  $("rvCap").textContent = "Chạm vào một cột để xem số tiền.";
+}
+$("rvSvg").addEventListener("click", e => {
+  const b = e.target.closest(".bar"); if (!b || !rv.cur) return;
+  document.querySelectorAll("#rvSvg .bar").forEach(x => x.classList.remove("on")); b.classList.add("on");
+  const i = +b.dataset.i, p = rv.mode === "day" ? "Lúc " : rv.mode === "month" ? "Ngày " : "";
+  $("rvCap").textContent = p + rv.cur.label(i).replace(/^T(\d+)$/, "Tháng $1") + ": " + money(rv.cur.sums[i]);
+});
+
+function when(r) {
+  const ms = r.ts && r.ts.toMillis ? r.ts.toMillis() : null;
+  if (ms == null) return String(r.d || "") + " " + String(r.h) + "h";
+  const iso = new Date(ms + 7 * 3600 * 1000).toISOString();
+  return iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) + " " + iso.slice(11, 16);
+}
+function drawRows() {
+  const rows = (rv.cache[rv.key] || []).slice().sort((a, b) => ((b.ts && b.ts.toMillis ? b.ts.toMillis() : 0) - (a.ts && a.ts.toMillis ? a.ts.toMillis() : 0)));
+  $("rvDelAll").hidden = !rows.length;
+  if (!rows.length) { $("rvRows").innerHTML = '<p class="hint">Không có đơn nào trong khoảng này.</p>'; return; }
+  const shown = rows.slice(0, 100);
+  $("rvRows").innerHTML = shown.map(r => `<div class="ord"><div class="t"><b>${money(r.total)}</b><span>${when(r)} · ${r.method === "cash" ? "Tiền mặt" : "Chuyển khoản"}</span></div><button type="button" class="del" data-id="${val(r.id)}">Xóa</button></div>`).join("")
+    + (rows.length > shown.length ? `<p class="hint">Đang hiện 100 đơn mới nhất trong ${rows.length} đơn. "Xóa tất cả" sẽ xóa đủ ${rows.length} đơn.</p>` : "");
+}
+function afterDelete(ids) {
+  const k = rv.key, set = new Set(ids);
+  rv.cache = {[k]: (rv.cache[k] || []).filter(r => !set.has(r.id))};
+  rv.cur = aggregate(rv.cache[k]); drawRv();
+}
+$("rvRows").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-id]"); if (!b) return;
+  if (!confirm("Xóa đơn này khỏi doanh thu?")) return;
+  b.disabled = true;
+  try { await firebase.firestore().collection("orders").doc(b.dataset.id).delete(); afterDelete([b.dataset.id]); $("rvMsg").textContent = ""; }
+  catch (err) { b.disabled = false; $("rvMsg").style.color = "#b00020"; $("rvMsg").textContent = err.code === "permission-denied" ? "Chưa xóa được: cần dán Rules mới (có cho phép xóa) vào Firestore." : "Xóa thất bại (" + err.message + ")."; }
+});
+$("rvDelAll").onclick = async () => {
+  const rows = rv.cache[rv.key] || []; if (!rows.length) return;
+  if (!confirm("Xóa " + rows.length + " đơn (tổng " + money(rows.reduce((a, r) => a + (Number(r.total) || 0), 0)) + ") trong khoảng này? Không khôi phục được.")) return;
+  $("rvDelAll").disabled = true; const done = [];
+  try {
+    const db = firebase.firestore();
+    for (let i = 0; i < rows.length; i += 400) {
+      const batch = db.batch(), part = rows.slice(i, i + 400);
+      part.forEach(r => batch.delete(db.collection("orders").doc(r.id)));
+      await batch.commit(); part.forEach(r => done.push(r.id));
+    }
+    $("rvMsg").textContent = "";
+  } catch (err) { $("rvMsg").style.color = "#b00020"; $("rvMsg").textContent = "Xóa chưa hết (" + (err.code === "permission-denied" ? "thiếu quyền, cần dán Rules mới" : err.message) + "). Đã xóa " + done.length + "/" + rows.length + " đơn."; }
+  $("rvDelAll").disabled = false; if (done.length) afterDelete(done);
 };
 </script>
 </body>
