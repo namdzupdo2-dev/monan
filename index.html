@@ -71,6 +71,13 @@ dialog{max-height:92vh;overflow:auto}
 .bank .row>b{text-align:right;word-break:break-all}
 .cp{margin-left:8px;padding:2px 10px;border:1px solid var(--ink);border-radius:4px;background:transparent;color:var(--ink);font:600 .8rem Lora,Georgia,serif;cursor:pointer}
 .note{margin:12px 0 0;font-size:.88rem;color:var(--muted)}
+fieldset.pm{min-width:0;margin:14px 0 0;padding:0;border:0}
+.pm legend{margin-bottom:6px;padding:0;font-size:.88rem;color:var(--muted)}
+.pmrow{display:flex;gap:10px}
+.pm label{position:relative;flex:1;margin:0;padding:11px 8px;border:1.5px solid var(--ink);border-radius:4px;text-align:center;cursor:pointer;color:var(--ink);font-size:.95rem}
+.pm label.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.pm label:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.pm input{position:absolute;opacity:0;pointer-events:none}
 </style>
 </head>
 <body>
@@ -91,22 +98,27 @@ dialog{max-height:92vh;overflow:auto}
     <label for="phone">Số điện thoại</label><input id="phone" type="tel" autocomplete="tel">
     <label for="place">Số bàn hoặc địa chỉ giao hàng</label><input id="place">
     <label for="note">Ghi chú</label><textarea id="note" rows="2"></textarea>
+    <fieldset class="pm"><legend>Hình thức thanh toán</legend>
+      <div class="pmrow">
+        <label class="on"><input type="radio" name="pm" value="bank" checked> Chuyển khoản</label>
+        <label><input type="radio" name="pm" value="cash"> Tiền mặt</label>
+      </div>
+    </fieldset>
     <div id="msg" role="status"></div>
     <div class="actions"><button type="button" id="close">Quay lại</button><button type="button" class="go" id="send">Đặt đơn</button></div>
   </div>
   <div id="payView" class="pay" hidden>
     <p class="lead">Đã gửi đơn cho quán. Mã đơn của bạn</p>
     <p class="code" id="pCode"></p>
-    <p class="lead">Quét mã bằng app ngân hàng để thanh toán</p>
+    <p class="lead" id="pHint">Quét mã bằng app ngân hàng để thanh toán</p>
     <div id="qr"></div>
-    <div class="bank">
+    <div class="bank" id="pBankBox">
       <div class="row"><span>Ngân hàng</span><b id="pBank"></b></div>
       <div class="row"><span>Chủ tài khoản</span><b id="pHolder"></b></div>
       <div class="row"><span>Số tài khoản</span><b><span id="pAcc"></span><button type="button" class="cp" data-copy="pAcc">Sao chép</button></b></div>
       <div class="row"><span>Số tiền</span><b id="pTotal"></b></div>
-      <div class="row"><span>Nội dung</span><b><span id="pMemo"></span><button type="button" class="cp" data-copy="pMemo">Sao chép</button></b></div>
     </div>
-    <p class="note">Hãy giữ mã đơn để nhận món. Quán sẽ xác nhận khi nhận được tiền.</p>
+    <p class="note" id="pNote">Hãy giữ mã đơn để nhận món. Quán sẽ xác nhận khi nhận được tiền.</p>
     <div class="actions"><button type="button" class="go" id="done">Xong</button></div>
   </div>
 </dialog>
@@ -189,8 +201,20 @@ $("bar").onclick = () => {
 };
 $("close").onclick = () => $("dlg").close();
 $("done").onclick = () => $("dlg").close();
+document.querySelectorAll('input[name="pm"]').forEach(r => r.addEventListener("change", () =>
+  document.querySelectorAll(".pm label").forEach(l => l.classList.toggle("on", l.querySelector("input").checked))));
 
 /* Mã đơn 5 số, không trùng trong ngày (giờ Việt Nam) */
+function logRevenue(total, method) {
+  try {
+    const iso = new Date(Date.now() + 7 * 3600 * 1000).toISOString();
+    firebase.firestore().collection("orders").add({
+      total: Math.round(total), method,
+      d: iso.slice(0, 10), m: iso.slice(0, 7), y: +iso.slice(0, 4), h: +iso.slice(11, 13),
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(() => {});
+  } catch (e) {}
+}
 const dayKey = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10).replace(/-/g, "");
 const rand5 = () => String(10000 + Math.floor(Math.random() * 90000));
 async function newCode() {
@@ -222,12 +246,19 @@ function vietQR(bin, acc, amount, memo) {
   p += "6304";
   return p + crc16(p);
 }
-function showPay(code, total, memo) {
-  $("pCode").textContent = "#" + code; $("pTotal").textContent = fmt(total); $("pMemo").textContent = memo;
-  $("pBank").textContent = PAY.name; $("pHolder").textContent = PAY.holder; $("pAcc").textContent = PAY.account;
-  const box = $("qr"); box.innerHTML = "";
-  try { new QRCode(box, {text: vietQR(PAY.bin, PAY.account, total, memo), width: 230, height: 230, correctLevel: QRCode.CorrectLevel.M}); }
-  catch (e) { box.style.lineHeight = "1.4"; box.textContent = "Không tạo được mã QR. Vui lòng chuyển khoản theo số tài khoản bên dưới."; }
+function showPay(code, total, memo, method) {
+  const cash = method === "cash";
+  $("pCode").textContent = "#" + code;
+  $("pHint").textContent = cash ? "Bạn chọn trả tiền mặt. Vui lòng trả " + fmt(total) + " khi nhận món." : "Quét mã bằng app ngân hàng để thanh toán";
+  $("pNote").textContent = cash ? "Hãy giữ mã đơn để nhận món. Quán đang chuẩn bị đơn của bạn." : "Hãy giữ mã đơn để nhận món. Quán sẽ xác nhận khi nhận được tiền.";
+  $("qr").hidden = cash; $("pBankBox").hidden = cash;
+  if (!cash) {
+    $("pTotal").textContent = fmt(total);
+    $("pBank").textContent = PAY.name; $("pHolder").textContent = PAY.holder; $("pAcc").textContent = PAY.account;
+    const box = $("qr"); box.innerHTML = "";
+    try { new QRCode(box, {text: vietQR(PAY.bin, PAY.account, total, ""), width: 230, height: 230, correctLevel: QRCode.CorrectLevel.M}); }
+    catch (e) { box.style.lineHeight = "1.4"; box.textContent = "Không tạo được mã QR. Vui lòng chuyển khoản theo số tài khoản bên dưới."; }
+  }
   $("formView").hidden = true; $("payView").hidden = false;
 }
 document.addEventListener("click", e => {
@@ -244,15 +275,17 @@ $("send").onclick = async () => {
   try {
     if (!orderCode) orderCode = await Promise.race([newCode(), new Promise(r => setTimeout(() => r(rand5()), 4000))]);
     const code = orderCode, total = totals().t, memo = "DON" + code;
+    const method = document.querySelector('input[name="pm"]:checked').value;
     const lines = all.filter(i=>cart[i.id]).map(i=>`• ${cart[i.id]} x ${i.name} = ${fmt(cart[i.id]*i.price)}`);
-    const text = `ĐƠN HÀNG MỚI #${code}\n${lines.join("\n")}\nTổng: ${fmt(total)}\n\nKhách: ${$("name").value}\nSĐT: ${$("phone").value}\nBàn/Địa chỉ: ${$("place").value}\nGhi chú: ${$("note").value||"không"}\n\nThanh toán: chuyển khoản ${PAY.name}, nội dung ${memo}`;
+    const text = `ĐƠN HÀNG MỚI #${code}\n${lines.join("\n")}\nTổng: ${fmt(total)}\n\nKhách: ${$("name").value}\nSĐT: ${$("phone").value}\nBàn/Địa chỉ: ${$("place").value}\nGhi chú: ${$("note").value||"không"}\n\nThanh toán: ${method === "cash" ? "TIỀN MẶT, thu " + fmt(total) + " khi khách nhận món" : "chuyển khoản " + PAY.name}`;
     const r = ORDER_URL
       ? await fetch(ORDER_URL, {method:"POST", headers:{"Content-Type":"text/plain"}, body:JSON.stringify({text})})
       : await sendDirect(text);
     if (!r.ok) { let d = ""; try { const j = await r.clone().json(); d = j.description || ""; } catch (e) { try { d = await r.text(); } catch (e2) {} } throw new Error("Telegram " + r.status + (d ? ": " + d : "")); }
     sent = true; orderCode = null;
+    logRevenue(total, method);
     cart = {}; all.forEach(i => $("q"+i.id).textContent = 0); refresh();
-    showPay(code, total, memo);
+    showPay(code, total, memo, method);
   } catch (e) {
     if (sent) { $("msg").textContent = "Đã gửi đơn cho quán. Quán sẽ liên hệ bạn."; }
     else { $("msg").textContent = "Gửi chưa được (" + (e && e.message ? e.message : "lỗi mạng") + "). Bấm Đặt đơn để thử lại."; $("send").disabled = false; }
